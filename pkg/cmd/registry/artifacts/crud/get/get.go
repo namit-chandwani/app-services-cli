@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	flagutil "github.com/redhat-developer/app-services-cli/pkg/cmdutil/flags"
@@ -20,8 +21,9 @@ import (
 )
 
 type Options struct {
-	artifact string
-	group    string
+	artifact   string
+	group      string
+	outputFile string
 
 	version string
 
@@ -46,14 +48,30 @@ func NewGetCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:     "get",
-		Short:   "Get latest artifact by id and group",
-		Long:    "",
-		Example: "",
-		Args:    cobra.RangeArgs(0, 1),
+		Use:   "get",
+		Short: "Get latest artifact by id and group",
+		Long:  "",
+		Example: `
+		## Get latest artifact by name
+		rhoas service-registry artifacts get myschema
+
+		## Get latest artifact and save its content to file
+		rhoas service-registry artifacts get myschema myschema.json
+
+		## Get latest artifact and pipe it to other command 
+		rhoas service-registry artifacts get myschema | grep -i 'user'
+		
+		## Get latest artifact by specifying custom group, registry and name as flag
+		rhoas service-registry artifacts get --group mygroup --registryId=myregistry --artifact myartifact.json ",
+		`,
+		Args: cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.artifact = args[0]
+			}
+
+			if len(args) > 1 {
+				opts.outputFile = args[1]
 			}
 
 			if len(args) > 0 {
@@ -81,6 +99,7 @@ func NewGetCommand(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
+	cmd.Flags().StringVarP(&opts.outputFile, "outputFile", "", "", "name of the file ")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
 
@@ -116,20 +135,24 @@ func runGet(opts *Options) error {
 
 	ctx := context.Background()
 	request := dataAPI.ArtifactsApi.GetLatestArtifact(ctx, opts.group, opts.artifact)
-	data, _, err := request.Execute()
+	dataFile, _, err := request.Execute()
 	if err != nil {
 		return registryinstanceerror.TransformError(err)
 	}
+	fileContent, err := ioutil.ReadFile(dataFile.Name())
+	if err != nil {
+		return err
+	}
+	if opts.outputFile != "" {
+		err := os.WriteFile(opts.outputFile, fileContent, 0600)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Print to stdout
+		fmt.Fprintf(os.Stdout, "%v\n", string(fileContent))
+	}
 
-	fmt.Fprintf(os.Stdout, "%v\n", data)
-
-	// stringContent := new(strings.Builder)
-	// io.Copy(stringContent, data)
-	// if err != nil {
-	// 	return nil
-	// }
-	// io.WriteString(opts.IO.Out, stringContent.String())
-	logger.Info("Successfully downloaded artifact")
-
+	logger.Info("Successfully fetched artifact")
 	return nil
 }
