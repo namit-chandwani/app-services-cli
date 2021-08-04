@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/redhat-developer/app-services-cli/pkg/cmdutil"
@@ -47,7 +45,6 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-// NewCreateCommand creates a new command for creating registry.
 func NewCreateCommand(f *factory.Factory) *cobra.Command {
 	opts := &Options{
 		IO:         f.IOStreams,
@@ -60,7 +57,7 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create",
 		Short:   "Creates new artifact",
-		Long:    "Creates new artifact from file or directly from content.",
+		Long:    "Creates new artifact from file or directly standard input",
 		Example: "",
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -110,7 +107,6 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
-// nolint:funlen
 func runCreate(opts *Options) error {
 
 	logger, err := opts.Logger()
@@ -142,7 +138,7 @@ func runCreate(opts *Options) error {
 		}
 	} else {
 		logger.Info("Reading file content from stdin")
-		specifiedFile, err = createFileFromStdin()
+		specifiedFile, err = util.CreateFileFromStdin()
 		if err != nil {
 			return err
 		}
@@ -176,25 +172,4 @@ func runCreate(opts *Options) error {
 	}
 
 	return nil
-}
-
-func createFileFromStdin() (*os.File, error) {
-	var specifiedFile *os.File
-	data, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		return nil, err
-	}
-	specifiedFile, err = ioutil.TempFile("", "rhoas-stream")
-	if err != nil {
-		return nil, err
-	}
-	_, err = (*specifiedFile).Write(data)
-	if err != nil {
-		return nil, err
-	}
-	_, err = (*specifiedFile).Seek(0, io.SeekStart)
-	if err != nil {
-		return nil, err
-	}
-	return specifiedFile, nil
 }

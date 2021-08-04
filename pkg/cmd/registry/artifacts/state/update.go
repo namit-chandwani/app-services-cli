@@ -31,7 +31,6 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-// NewCreateCommand creates a new command for creating registry.
 func NewStateUpdateCommand(f *factory.Factory) *cobra.Command {
 	opts := &Options{
 		IO:         f.IOStreams,
@@ -50,7 +49,6 @@ func NewStateUpdateCommand(f *factory.Factory) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.name = args[0]
-				// TODO check if file exist and can be read
 			}
 
 			validOutputFormats := flagutil.ValidOutputFormats
@@ -70,7 +68,6 @@ func NewStateUpdateCommand(f *factory.Factory) *cobra.Command {
 	return cmd
 }
 
-// nolint:funlen
 func runCreate(opts *Options) error {
 	logger, err := opts.Logger()
 	if err != nil {
