@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/redhat-developer/app-services-cli/pkg/cmdutil"
@@ -80,7 +82,11 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 				return err
 			}
 
-			// TODO validate artifact types
+			if opts.artifactType != "" {
+				if _, err = registryinstanceclient.NewArtifactTypeFromValue(opts.artifactType); err != nil {
+					return fmt.Errorf("Invalid artifact type. Please use one of following values: " + util.GetAllowedArtifactTypeEnumValuesAsString())
+				}
+			}
 
 			if !cfg.HasServiceRegistry() {
 				return fmt.Errorf("No service Registry selected. Use 'rhoas service-registry use' use to select your registry")
@@ -96,7 +102,7 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Id of the artifact")
-	cmd.Flags().StringVarP(&opts.artifactType, "type", "t", "", "Type of artifact")
+	cmd.Flags().StringVarP(&opts.artifactType, "type", "t", "", "Type of artifact. Choose from:  "+util.GetAllowedArtifactTypeEnumValuesAsString())
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
@@ -127,41 +133,68 @@ func runCreate(opts *Options) error {
 		opts.group = util.DefaultArtifactGroup
 	}
 
-	// TODO read from STDIN when file is not provided
+	var specifiedFile *os.File
 	if opts.file != "" {
-		logger.Info("Opening file for reading")
-		specifiedFile, err := os.Open(opts.file)
+		logger.Info("Opening file: " + opts.file)
+		specifiedFile, err = os.Open(opts.file)
 		if err != nil {
 			return err
 		}
-		ctx := context.Background()
-		request := dataAPI.ArtifactsApi.CreateArtifact(ctx, opts.group)
-		if opts.artifactType != "" {
-			request = request.XRegistryArtifactType(registryinstanceclient.ArtifactType(opts.artifactType))
-		}
-		if opts.artifact != "" {
-			request = request.XRegistryArtifactId(opts.artifact)
-		}
-		if opts.version != "" {
-			request = request.XRegistryVersion(opts.version)
-		}
-		request = request.Body(specifiedFile)
-		metadata, _, err := request.Execute()
+	} else {
+		logger.Info("Reading file content from stdin")
+		specifiedFile, err = createFileFromStdin()
 		if err != nil {
 			return err
 		}
-		logger.Info("Artifact created")
+	}
 
-		switch opts.outputFormat {
-		case "json":
-			data, _ := json.MarshalIndent(metadata, "", cmdutil.DefaultJSONIndent)
-			_ = dump.JSON(opts.IO.Out, data)
-		case "yaml", "yml":
-			data, _ := yaml.Marshal(metadata)
-			_ = dump.YAML(opts.IO.Out, data)
-		}
+	ctx := context.Background()
+	request := dataAPI.ArtifactsApi.CreateArtifact(ctx, opts.group)
+	if opts.artifactType != "" {
+		request = request.XRegistryArtifactType(registryinstanceclient.ArtifactType(opts.artifactType))
+	}
+	if opts.artifact != "" {
+		request = request.XRegistryArtifactId(opts.artifact)
+	}
+	if opts.version != "" {
+		request = request.XRegistryVersion(opts.version)
+	}
+	request = request.Body(specifiedFile)
+	metadata, _, err := request.Execute()
+	if err != nil {
+		return err
+	}
+	logger.Info("Artifact created")
 
+	switch opts.outputFormat {
+	case "json":
+		data, _ := json.MarshalIndent(metadata, "", cmdutil.DefaultJSONIndent)
+		_ = dump.JSON(opts.IO.Out, data)
+	case "yaml", "yml":
+		data, _ := yaml.Marshal(metadata)
+		_ = dump.YAML(opts.IO.Out, data)
 	}
 
 	return nil
+}
+
+func createFileFromStdin() (*os.File, error) {
+	var specifiedFile *os.File
+	data, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, err
+	}
+	specifiedFile, err = ioutil.TempFile("", "rhoas-stream")
+	if err != nil {
+		return nil, err
+	}
+	_, err = (*specifiedFile).Write(data)
+	if err != nil {
+		return nil, err
+	}
+	_, err = (*specifiedFile).Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
+	return specifiedFile, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	flagutil "github.com/redhat-developer/app-services-cli/pkg/cmdutil/flags"
 	"github.com/redhat-developer/app-services-cli/pkg/connection"
@@ -32,7 +31,7 @@ type ArtifactRow struct {
 
 	Name *string `json:"name,omitempty" header:"Name"`
 
-	CreatedOn time.Time `json:"createdOn" header:"Created"`
+	CreatedOn string `json:"createdOn" header:"Created"`
 
 	CreatedBy string `json:"createdBy" header:"Created By"`
 
