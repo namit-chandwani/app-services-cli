@@ -45,7 +45,7 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-func NewCreateCommand(f *factory.Factory) *cobra.Command {
+func NewVersionsCommand(f *factory.Factory) *cobra.Command {
 	opts := &Options{
 		IO:         f.IOStreams,
 		Config:     f.Config,
@@ -55,8 +55,8 @@ func NewCreateCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Creates new artifact from file or standard input",
+		Use:   "version",
+		Short: "Get versions for..",
 		Long: `
 Creates a new artifact by posting the artifact content to the registry.
 

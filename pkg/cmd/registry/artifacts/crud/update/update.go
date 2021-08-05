@@ -54,9 +54,23 @@ func NewUpdateCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:     "create",
-		Short:   "Creates new artifact",
-		Long:    "Creates new artifact from file or directly standard input",
+		Use:   "update",
+		Short: "Update artifact",
+		Long: `
+Update artifact from file or directly standard input
+
+Artifacts can be typically in JSON format for most of the supported types, but may be in another format for a few (for example, PROTOBUF).
+The type of the content should be compatible with the artifact's type.
+(it would be an error to update an AVRO artifact with new OPENAPI content, for example).
+
+When successful, this creates a new version of the artifact, making it the most recent (and therefore official) version of the artifact.
+
+An artifact is update using the content provided in the body of the request.  
+This content is update under a unique artifact ID that can be provided by user.
+
+When --group parameter is missing the command will create a new artifact under the "default" group.
+when --registry is missing the command will create a new artifact for currently active service registry (visible in rhoas service-registry describe)
+		`,
 		Example: "",
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {

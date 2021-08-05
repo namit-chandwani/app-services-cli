@@ -52,17 +52,17 @@ func NewGetCommand(f *factory.Factory) *cobra.Command {
 		Short: "Get latest artifact by id and group",
 		Long:  "",
 		Example: `
-		## Get latest artifact by name
-		rhoas service-registry artifacts get myschema
+## Get latest artifact by name
+rhoas service-registry artifacts get myschema
 
-		## Get latest artifact and save its content to file
-		rhoas service-registry artifacts get myschema myschema.json
+## Get latest artifact and save its content to file
+rhoas service-registry artifacts get myschema myschema.json
 
-		## Get latest artifact and pipe it to other command 
-		rhoas service-registry artifacts get myschema | grep -i 'user'
-		
-		## Get latest artifact by specifying custom group, registry and name as flag
-		rhoas service-registry artifacts get --group mygroup --registryId=myregistry --artifact myartifact.json ",
+## Get latest artifact and pipe it to other command 
+rhoas service-registry artifacts get myschema | grep -i 'user'
+
+## Get latest artifact by specifying custom group, registry and name as flag
+rhoas service-registry artifacts get --group mygroup --registryId=myregistry --artifact myartifact.json 
 		`,
 		Args: cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
