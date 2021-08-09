@@ -68,11 +68,20 @@ func NewListCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:     "list",
-		Short:   "List artifacts",
-		Long:    "List all artifacts for the group",
-		Example: "",
-		Args:    cobra.RangeArgs(0, 1),
+		Use:   "list",
+		Short: "List artifacts",
+		Long:  "List all artifacts for the group by specified output format (by default table)",
+		Example: `
+## List all artifacts for the default artifacts group
+rhoas service-registry artifacts list
+
+## List all artifacts with explicit group 
+rhoas service-registry artifacts list --group=my=group
+
+## List all artifacts with limit and group
+rhoas service-registry artifacts list --page=2 --limit=10
+		`,
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.outputFormat != "" && !flagutil.IsValidInput(opts.outputFormat, flagutil.ValidOutputFormats...) {
 				return flag.InvalidValueError("output", opts.outputFormat, flagutil.ValidOutputFormats...)
@@ -108,7 +117,7 @@ func NewListCommand(f *factory.Factory) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.orderBy, "orderBy", "", "", "Order by fields (id, name etc.) ")
 
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
-	cmd.Flags().StringVarP(&opts.outputFormat, "output", "o", "", "Output type")
+	cmd.Flags().StringVarP(&opts.outputFormat, "output", "o", "", "Output format (json, yaml, yml, table)")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
 

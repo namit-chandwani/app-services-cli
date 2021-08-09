@@ -43,7 +43,7 @@ func NewArtifactsCommand(f *factory.Factory) *cobra.Command {
 		update.NewUpdateCommand(f),
 
 		// Misc
-		versions.NewVersionsGetCommand(f),
+		versions.NewVersionsCommand(f),
 	)
 
 	return cmd

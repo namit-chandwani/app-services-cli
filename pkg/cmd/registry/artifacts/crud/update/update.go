@@ -10,7 +10,6 @@ import (
 	"github.com/redhat-developer/app-services-cli/pkg/connection"
 	"github.com/redhat-developer/app-services-cli/pkg/dump"
 	"github.com/redhat-developer/app-services-cli/pkg/localize"
-	registryinstanceclient "github.com/redhat-developer/app-services-sdk-go/registryinstance/apiv1internal/client"
 	"gopkg.in/yaml.v2"
 
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/flag"
@@ -31,8 +30,7 @@ type Options struct {
 	artifact string
 	group    string
 
-	file         string
-	artifactType string
+	file string
 
 	registryID   string
 	outputFormat string
@@ -71,8 +69,14 @@ This content is update under a unique artifact ID that can be provided by user.
 When --group parameter is missing the command will create a new artifact under the "default" group.
 when --registry is missing the command will create a new artifact for currently active service registry (visible in rhoas service-registry describe)
 		`,
-		Example: "",
-		Args:    cobra.RangeArgs(0, 1),
+		Example: `
+## update artifact 
+rhoas service-registry artifacts get my-artifact.json
+
+## update artifact from group and artifact-id
+rhoas service-registry artifacts update my-artifact.json --artifact=my-artifact --group my-group
+`,
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			validOutputFormats := flagutil.ValidOutputFormats
 			if opts.outputFormat != "" && !flagutil.IsValidInput(opts.outputFormat, validOutputFormats...) {
@@ -92,12 +96,6 @@ when --registry is missing the command will create a new artifact for currently 
 				return err
 			}
 
-			if opts.artifactType != "" {
-				if _, err = registryinstanceclient.NewArtifactTypeFromValue(opts.artifactType); err != nil {
-					return fmt.Errorf("Invalid artifact type. Please use one of following values: " + util.GetAllowedArtifactTypeEnumValuesAsString())
-				}
-			}
-
 			if !cfg.HasServiceRegistry() {
 				return fmt.Errorf("No service Registry selected. Use 'rhoas service-registry use' use to select your registry")
 			}
@@ -111,8 +109,7 @@ when --registry is missing the command will create a new artifact for currently 
 	cmd.Flags().StringVarP(&opts.file, "file", "f", "", "File location of the artifact")
 
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
-	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Id of the artifact")
-	cmd.Flags().StringVarP(&opts.artifactType, "type", "t", "", "Type of artifact. Choose from:  "+util.GetAllowedArtifactTypeEnumValuesAsString())
+	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
 
 	flagutil.EnableOutputFlagCompletion(cmd)

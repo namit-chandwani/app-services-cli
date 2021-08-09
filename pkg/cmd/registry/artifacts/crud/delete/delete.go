@@ -105,7 +105,7 @@ rhoas service-registry artifact delete artifact=my-artifact
 	cmd.Flags().StringVarP(&opts.outputFormat, "output", "o", "json", opts.localizer.MustLocalize("registry.cmd.flag.output.description"))
 
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
-	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Id of the artifact")
+	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
 
 	return cmd

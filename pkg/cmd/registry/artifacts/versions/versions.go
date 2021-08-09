@@ -1,17 +1,18 @@
-package get
+package versions
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	flagutil "github.com/redhat-developer/app-services-cli/pkg/cmdutil/flags"
 	"github.com/redhat-developer/app-services-cli/pkg/connection"
+	"github.com/redhat-developer/app-services-cli/pkg/dump"
 	"github.com/redhat-developer/app-services-cli/pkg/iostreams"
 	"github.com/redhat-developer/app-services-cli/pkg/localize"
 	"github.com/redhat-developer/app-services-cli/pkg/serviceregistry/registryinstanceerror"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
 	"github.com/redhat-developer/app-services-cli/internal/config"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/factory"
@@ -21,9 +22,9 @@ import (
 )
 
 type Options struct {
-	artifact   string
-	group      string
-	outputFile string
+	artifact     string
+	group        string
+	outputFormat string
 
 	registryID string
 
@@ -34,9 +35,7 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-// NewDescribeCommand describes a service instance, either by passing an `--id flag`
-// or by using the service instance set in the config, if any
-func NewGetCommand(f *factory.Factory) *cobra.Command {
+func NewVersionsCommand(f *factory.Factory) *cobra.Command {
 	opts := &Options{
 		Config:     f.Config,
 		Connection: f.Connection,
@@ -46,33 +45,20 @@ func NewGetCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get latest artifact by id and group",
-		Long: `
-Get latest artifact by specifying id and group.
-Command will fetch the latest artifact from the registry based on the id and group.	
-`,
+		Use:   "versions",
+		Short: "Get latest artifact versions by id and group",
+		Long:  "Get latest artifact versions by specifying group and artifacts id",
 		Example: `
-## Get latest artifact by name
-rhoas service-registry artifacts get myschema
+## Get latest artifact versions for default group
+rhoas service-registry artifacts versions my-artifact
 
-## Get latest artifact and save its content to file
-rhoas service-registry artifacts get myschema myschema.json
-
-## Get latest artifact and pipe it to other command 
-rhoas service-registry artifacts get myschema | grep -i 'user'
-
-## Get latest artifact by specifying custom group, registry and name as flag
-rhoas service-registry artifacts get --group mygroup --registryId=myregistry --artifact myartifact.json 
-`,
+## Get latest artifact versions for my-group group
+rhoas service-registry artifacts versions my-artifact --group mygroup 
+		`,
 		Args: cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.artifact = args[0]
-			}
-
-			if len(args) > 1 {
-				opts.outputFile = args[1]
 			}
 
 			if opts.registryID != "" {
@@ -96,7 +82,7 @@ rhoas service-registry artifacts get --group mygroup --registryId=myregistry --a
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
-	cmd.Flags().StringVarP(&opts.outputFile, "outputFile", "", "", "name of the file ")
+	cmd.Flags().StringVarP(&opts.outputFormat, "output", "o", "", "Output format (json, yaml, yml)")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
 
@@ -124,32 +110,28 @@ func runGet(opts *Options) error {
 		opts.group = util.DefaultArtifactGroup
 	}
 
-	logger.Info("Fetching artifact")
+	logger.Info("Fetching artifact versions")
 
 	if err != nil {
 		return nil
 	}
 
 	ctx := context.Background()
-	request := dataAPI.ArtifactsApi.GetLatestArtifact(ctx, opts.group, opts.artifact)
-	dataFile, _, err := request.Execute()
+	request := dataAPI.MetadataApi.GetArtifactVersionMetaDataByContent(ctx, opts.group, opts.artifact)
+	response, _, err := request.Execute()
 	if err != nil {
 		return registryinstanceerror.TransformError(err)
 	}
-	fileContent, err := ioutil.ReadFile(dataFile.Name())
-	if err != nil {
-		return err
-	}
-	if opts.outputFile != "" {
-		err := os.WriteFile(opts.outputFile, fileContent, 0600)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Print to stdout
-		fmt.Fprintf(os.Stdout, "%v\n", string(fileContent))
-	}
 
-	logger.Info("Successfully fetched artifact")
+	logger.Info("Successfully fetched artifact versions")
+
+	switch opts.outputFormat {
+	case "yaml", "yml":
+		data, _ := yaml.Marshal(response)
+		_ = dump.YAML(opts.IO.Out, data)
+	default:
+		data, _ := json.Marshal(response)
+		_ = dump.JSON(opts.IO.Out, data)
+	}
 	return nil
 }
