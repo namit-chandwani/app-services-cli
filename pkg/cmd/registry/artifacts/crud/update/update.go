@@ -64,19 +64,13 @@ The type of the content should be compatible with the artifact's type.
 When successful, this creates a new version of the artifact, making it the most recent (and therefore official) version of the artifact.
 
 An artifact is update using the content provided in the body of the request.  
-This content is update under a unique artifact ID that can be provided by user.
-
-When --group parameter is missing the command will create a new artifact under the "default" group.
-when --registry is missing the command will create a new artifact for currently active service registry (visible in rhoas service-registry describe)
+This content is updated under a unique artifactId provided by user.
 		`,
 		Example: `
-## update artifact 
-rhoas service-registry artifacts get my-artifact.json
-
 ## update artifact from group and artifact-id
 rhoas service-registry artifacts update my-artifact.json --artifact=my-artifact --group my-group
 `,
-		Args: cobra.RangeArgs(0, 1),
+		Args: cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			validOutputFormats := flagutil.ValidOutputFormats
 			if opts.outputFormat != "" && !flagutil.IsValidInput(opts.outputFormat, validOutputFormats...) {
@@ -84,7 +78,15 @@ rhoas service-registry artifacts update my-artifact.json --artifact=my-artifact 
 			}
 
 			if len(args) > 0 {
-				opts.file = args[0]
+				opts.artifact = args[0]
+			}
+
+			if opts.artifact == "" {
+				return fmt.Errorf("Artifact is required. Please specify artifact as positional argument or by using --artifact flag")
+			}
+
+			if len(args) > 1 {
+				opts.file = args[1]
 			}
 
 			if opts.registryID != "" {

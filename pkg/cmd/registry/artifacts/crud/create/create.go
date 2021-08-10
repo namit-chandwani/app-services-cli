@@ -48,8 +48,8 @@ type Options struct {
 var longDescription = `
 Creates a new artifact by posting the artifact content to the registry.
 
-	Artifacts can be typically in JSON format for most of the supported types, but may be in another format for a few (for example, PROTOBUF).
-	The registry attempts to figure out what kind of artifact is being added from the following supported list:
+Artifacts can be typically in JSON format for most of the supported types, but may be in another format for a few (for example, PROTOBUF).
+The registry attempts to figure out what kind of artifact is being added from the following supported list:
 
 - Avro (AVRO)
 - Protobuf (PROTOBUF)
@@ -139,6 +139,9 @@ rhoas service-registry artifacts create --type=JSON my-artifact.json
 	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
+	_ = cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return util.AllowedArtifactTypeEnumValues, cobra.ShellCompDirectiveNoSpace
+	})
 
 	return cmd
 }

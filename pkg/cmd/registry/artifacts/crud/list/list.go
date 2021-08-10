@@ -30,9 +30,9 @@ type ArtifactRow struct {
 	// The ID of a single artifact.
 	Id string `json:"id" header:"ID"`
 
-	Name *string `json:"name,omitempty" header:"Name"`
+	Name string `json:"name,omitempty" header:"Name"`
 
-	CreatedOn string `json:"createdOn" header:"Created"`
+	CreatedOn string `json:"createdOn" header:"Created on"`
 
 	CreatedBy string `json:"createdBy" header:"Created By"`
 
@@ -148,7 +148,7 @@ func runList(opts *Options) error {
 		return err
 	}
 	request := a.ArtifactsApi.ListArtifactsInGroup(context.Background(), opts.group)
-	request = request.Offset(opts.page)
+	request = request.Offset(opts.page * opts.limit)
 	request = request.Limit(opts.limit)
 
 	response, _, err := request.Execute()
@@ -184,7 +184,7 @@ func mapResponseItemsToRows(artifacts *[]registryinstanceclient.SearchedArtifact
 		k := (*artifacts)[i]
 		row := ArtifactRow{
 			Id:        k.GetId(),
-			Name:      k.Name,
+			Name:      k.GetName(),
 			CreatedOn: k.GetCreatedOn(),
 			CreatedBy: k.GetCreatedBy(),
 			Type:      k.GetType(),

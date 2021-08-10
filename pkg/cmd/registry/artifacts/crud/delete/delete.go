@@ -144,7 +144,7 @@ func runDelete(opts *Options) error {
 		if err != nil {
 			return registryinstanceerror.TransformError(err)
 		}
-		logger.Info("Artifacts in group" + opts.group + "deleted: ")
+		logger.Info("Artifacts in group" + opts.group + " deleted")
 	} else {
 		logger.Info("Deleting artifact " + opts.artifact)
 		err = confirmDelete(opts, "Do you want to delete artifact "+opts.artifact+" from group "+opts.group)

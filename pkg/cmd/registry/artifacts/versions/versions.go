@@ -55,7 +55,7 @@ rhoas service-registry artifacts versions my-artifact
 ## Get latest artifact versions for my-group group
 rhoas service-registry artifacts versions my-artifact --group mygroup 
 		`,
-		Args: cobra.RangeArgs(0, 2),
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.artifact = args[0]

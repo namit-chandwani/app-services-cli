@@ -58,7 +58,7 @@ rhoas service-registry artifacts metadata my-artifact
 ## Get latest artifact metadata for my-group group
 rhoas service-registry artifacts metadata my-artifact --group mygroup 
 		`,
-		Args: cobra.RangeArgs(0, 2),
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.artifact = args[0]

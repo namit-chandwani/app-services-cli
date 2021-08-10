@@ -37,7 +37,7 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-func NewGetCommand(f *factory.Factory) *cobra.Command {
+func NewDownloadCommand(f *factory.Factory) *cobra.Command {
 	opts := &Options{
 		Config:     f.Config,
 		Connection: f.Connection,
@@ -47,7 +47,7 @@ func NewGetCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "download",
 		Short: "Download artifacts from registry by using global identifiers",
 		Long: `Get single or more artifacts by group, content, hash or globalIds. 
 		NOTE: Use "service-registry get" command if you wish to download artifact by artifactId.
