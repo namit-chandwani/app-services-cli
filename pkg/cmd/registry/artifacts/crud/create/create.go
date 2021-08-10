@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/app-services-cli/pkg/connection"
 	"github.com/redhat-developer/app-services-cli/pkg/dump"
 	"github.com/redhat-developer/app-services-cli/pkg/localize"
+	"github.com/redhat-developer/app-services-cli/pkg/serviceregistry/registryinstanceerror"
 	registryinstanceclient "github.com/redhat-developer/app-services-sdk-go/registryinstance/apiv1internal/client"
 	"gopkg.in/yaml.v2"
 
@@ -33,7 +34,6 @@ type Options struct {
 
 	file         string
 	artifactType string
-	version      string
 
 	registryID   string
 	outputFormat string
@@ -45,19 +45,7 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-func NewCreateCommand(f *factory.Factory) *cobra.Command {
-	opts := &Options{
-		IO:         f.IOStreams,
-		Config:     f.Config,
-		Connection: f.Connection,
-		Logger:     f.Logger,
-		localizer:  f.Localizer,
-	}
-
-	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Creates new artifact from file or standard input",
-		Long: `
+var longDescription = `
 Creates a new artifact by posting the artifact content to the registry.
 
 	Artifacts can be typically in JSON format for most of the supported types, but may be in another format for a few (for example, PROTOBUF).
@@ -81,8 +69,22 @@ If an artifact with the provided artifact ID already exists command will fail wi
 
 
 When --group parameter is missing the command will create a new artifact under the "default" group.
-when --registry is missing the command will create a new artifact for currently active service registry (visible in rhoas service-registry describe)		 
-		`,
+when --registry is missing the command will create a new artifact for currently active service registry (visible in rhoas service-registry describe)
+`
+
+func NewCreateCommand(f *factory.Factory) *cobra.Command {
+	opts := &Options{
+		IO:         f.IOStreams,
+		Config:     f.Config,
+		Connection: f.Connection,
+		Logger:     f.Logger,
+		localizer:  f.Localizer,
+	}
+
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Creates new artifact from file or standard input",
+		Long:  longDescription,
 		Example: `
 ## Create artifact in my-group from schema.json file
 rhoas service-registry artifacts create my-group schema.json
@@ -134,7 +136,7 @@ rhoas service-registry artifacts create --type=JSON my-artifact.json
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
 	cmd.Flags().StringVarP(&opts.artifactType, "type", "t", "", "Type of artifact. Choose from:  "+util.GetAllowedArtifactTypeEnumValuesAsString())
-	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
+	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
 
@@ -159,7 +161,7 @@ func runCreate(opts *Options) error {
 	}
 
 	if opts.group == "" {
-		logger.Info("Group was not specified. Using 'default' artifacts group.")
+		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + " artifacts group.")
 		opts.group = util.DefaultArtifactGroup
 	}
 
@@ -186,13 +188,11 @@ func runCreate(opts *Options) error {
 	if opts.artifact != "" {
 		request = request.XRegistryArtifactId(opts.artifact)
 	}
-	if opts.version != "" {
-		request = request.XRegistryVersion(opts.version)
-	}
+
 	request = request.Body(specifiedFile)
 	metadata, _, err := request.Execute()
 	if err != nil {
-		return err
+		return registryinstanceerror.TransformError(err)
 	}
 	logger.Info("Artifact created")
 

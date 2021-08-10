@@ -81,7 +81,7 @@ rhoas service-registry artifacts versions my-artifact --group mygroup
 
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
-	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
+	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 	cmd.Flags().StringVarP(&opts.outputFormat, "output", "o", "", "Output format (json, yaml, yml)")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
@@ -111,10 +111,6 @@ func runGet(opts *Options) error {
 	}
 
 	logger.Info("Fetching artifact versions")
-
-	if err != nil {
-		return nil
-	}
 
 	ctx := context.Background()
 	request := dataAPI.MetadataApi.GetArtifactVersionMetaDataByContent(ctx, opts.group, opts.artifact)

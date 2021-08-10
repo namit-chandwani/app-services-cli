@@ -110,7 +110,7 @@ rhoas service-registry artifacts update my-artifact.json --artifact=my-artifact 
 
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
-	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
+	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
 
@@ -135,7 +135,7 @@ func runUpdate(opts *Options) error {
 	}
 
 	if opts.group == "" {
-		logger.Info("Group was not specified. Using 'default' artifacts group.")
+		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + " artifacts group.")
 		opts.group = util.DefaultArtifactGroup
 	}
 

@@ -236,7 +236,7 @@ func (c *KeycloakConnection) API() *api.API {
 		}
 
 		status := instance.GetStatus()
-
+		// nolint
 		switch status {
 		case "provisioning", "accepted":
 			err = fmt.Errorf(`Service Registry instance "%v" is not ready yet`, instance.GetName())

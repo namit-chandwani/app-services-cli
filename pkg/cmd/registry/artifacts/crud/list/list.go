@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/app-services-cli/pkg/connection"
 	"github.com/redhat-developer/app-services-cli/pkg/iostreams"
 	"github.com/redhat-developer/app-services-cli/pkg/localize"
+	"github.com/redhat-developer/app-services-cli/pkg/serviceregistry/registryinstanceerror"
 	registryinstanceclient "github.com/redhat-developer/app-services-sdk-go/registryinstance/apiv1internal/client"
 
 	"github.com/redhat-developer/app-services-cli/pkg/dump"
@@ -116,7 +117,7 @@ rhoas service-registry artifacts list --page=2 --limit=10
 	cmd.Flags().Int32VarP(&opts.limit, "limit", "", 100, "Page limit")
 	cmd.Flags().StringVarP(&opts.orderBy, "orderBy", "", "", "Order by fields (id, name etc.) ")
 
-	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
+	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 	cmd.Flags().StringVarP(&opts.outputFormat, "output", "o", "", "Output format (json, yaml, yml, table)")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
@@ -131,7 +132,7 @@ func runList(opts *Options) error {
 	}
 
 	if opts.group == "" {
-		logger.Info("Group was not specified. Using 'default' artifacts group.")
+		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + " artifacts group.")
 		opts.group = util.DefaultArtifactGroup
 	}
 
@@ -150,10 +151,9 @@ func runList(opts *Options) error {
 	request = request.Offset(opts.page)
 	request = request.Limit(opts.limit)
 
-	response, data, err := request.Execute()
+	response, _, err := request.Execute()
 	if err != nil {
-		logger.Info(data, err)
-		return err
+		return registryinstanceerror.TransformError(err)
 	}
 
 	if len(response.Artifacts) == 0 && opts.outputFormat == "" {

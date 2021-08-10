@@ -106,7 +106,7 @@ rhoas service-registry artifact delete artifact=my-artifact
 
 	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
-	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry.")
+	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 
 	return cmd
 }
@@ -128,7 +128,7 @@ func runDelete(opts *Options) error {
 	}
 
 	if opts.group == "" {
-		logger.Info("Group was not specified. Using 'default' artifacts group.")
+		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + " artifacts group.")
 		opts.group = util.DefaultArtifactGroup
 	}
 
@@ -136,7 +136,7 @@ func runDelete(opts *Options) error {
 		logger.Info("Artifact was not specified. Command will delete all artifacts in the group")
 		err = confirmDelete(opts, "Do you want to delete ALL ARTIFACTS from group "+opts.group)
 		if err != nil {
-			return nil
+			return err
 		}
 		ctx := context.Background()
 		request := dataAPI.ArtifactsApi.DeleteArtifactsInGroup(ctx, opts.group)
@@ -149,7 +149,7 @@ func runDelete(opts *Options) error {
 		logger.Info("Deleting artifact " + opts.artifact)
 		err = confirmDelete(opts, "Do you want to delete artifact "+opts.artifact+" from group "+opts.group)
 		if err != nil {
-			return nil
+			return err
 		}
 		ctx := context.Background()
 		request := dataAPI.ArtifactsApi.DeleteArtifact(ctx, opts.group, opts.artifact)

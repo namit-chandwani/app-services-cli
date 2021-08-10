@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/redhat-developer/app-services-sdk-go/registryinstance/apiv1internal/client"
+	registryinstanceclient "github.com/redhat-developer/app-services-sdk-go/registryinstance/apiv1internal/client"
 )
 
 type Error struct {
@@ -33,12 +33,11 @@ func GetAPIError(err error) (e registryinstanceclient.Error, ok bool) {
 }
 
 // Error code contains message that can be returned to the user
-// TODO - this method doesn't seem to work and map common errors
 func TransformError(err error) error {
 	mappedErr, ok := GetAPIError(err)
 	if !ok {
 		return err
 	}
 
-	return errors.New("Error: " + mappedErr.GetMessage() + " Detail " + mappedErr.GetDetail())
+	return errors.New(mappedErr.GetName() + ": " + mappedErr.GetMessage())
 }

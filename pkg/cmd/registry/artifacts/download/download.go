@@ -1,4 +1,4 @@
-package get
+package download
 
 import (
 	"context"
@@ -21,12 +21,14 @@ import (
 )
 
 type Options struct {
-	artifact   string
-	group      string
+	group string
+
+	contentId  int64
+	globalId   int64
+	hash       string
 	outputFile string
 
 	registryID string
-	version    string
 
 	IO         *iostreams.IOStreams
 	Config     config.IConfig
@@ -46,39 +48,32 @@ func NewGetCommand(f *factory.Factory) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Get artifact by id and group",
-		Long: `Get artifact by specifying id and group.
-Command will fetch the latest artifact from the registry based on the artifactId and group.
+		Short: "Download artifacts from registry by using global identifiers",
+		Long: `Get single or more artifacts by group, content, hash or globalIds. 
+		NOTE: Use "service-registry get" command if you wish to download artifact by artifactId.
 
-When --version is specified command will fetch the specific version of the artifact.
-Get command will fetch artifacts based on group and artifactId and version.
-For fetching artifacts using global identifiers please use "service-registry download" command
-`,
+		Flags are used to specify the artifact to download:
+
+		--contentId - id if the content from metadata
+		--globalId - globalId of the content from metadata
+		--hash - SHA-256 hash of the content`,
 		Example: `
-## Get latest artifact by name
-rhoas service-registry artifacts get myschema
+## Get latest artifact by content id
+rhoas service-registry artifacts download --contentId=183282932983
 
-## Get latest artifact and save its content to file
-rhoas service-registry artifacts get myschema myschema.json
+## Get latest artifact by content id to specific file
+rhoas service-registry artifacts download --contentId=183282932983 schema.json
 
-## Get latest artifact and pipe it to other command 
-rhoas service-registry artifacts get myschema | grep -i 'user'
+## Get latest artifact by global id
+rhoas service-registry artifacts download --globalId=383282932983
 
-## Get latest artifact by specifying custom group, registry and name as flag
-rhoas service-registry artifacts get --group mygroup --registryId=myregistry --artifact myartifact
+## Get latest artifact by hash
+rhoas service-registry artifacts download --hash=c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
 `,
-		Args: cobra.RangeArgs(0, 2),
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
-				opts.artifact = args[0]
-			}
-
-			if opts.artifact == "" {
-				return fmt.Errorf("Artifact is required. Please specify artifact as positional argument or by using --artifact flag")
-			}
-
-			if len(args) > 1 {
-				opts.outputFile = args[1]
+				opts.outputFile = args[0]
 			}
 
 			if opts.registryID != "" {
@@ -99,11 +94,14 @@ rhoas service-registry artifacts get --group mygroup --registryId=myregistry --a
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.artifact, "artifact", "a", "", "Id of the artifact")
 	cmd.Flags().StringVarP(&opts.group, "group", "g", "", "Group of the artifact")
-	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
+	cmd.Flags().StringVarP(&opts.hash, "hash", "", "", "SHA-256 hash of the artifact")
+	cmd.Flags().Int64VarP(&opts.globalId, "globalId", "", -1, "Global ID of the artifact")
+	cmd.Flags().Int64VarP(&opts.contentId, "contentId", "", -1, "contentId of the artifact")
+
 	cmd.Flags().StringVarP(&opts.outputFile, "outputFile", "", "", "Filename of the output file")
-	cmd.Flags().StringVarP(&opts.version, "version", "", "", "Version of the artifact")
+
+	cmd.Flags().StringVarP(&opts.registryID, "registryId", "", "", "Id of the registry to be used. By default uses currently selected registry")
 
 	flagutil.EnableOutputFlagCompletion(cmd)
 
@@ -127,7 +125,7 @@ func runGet(opts *Options) error {
 	}
 
 	if opts.group == "" {
-		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + "artifacts group.")
+		logger.Info("Group was not specified. Using 'default' artifacts group.")
 		opts.group = util.DefaultArtifactGroup
 	}
 
@@ -135,16 +133,24 @@ func runGet(opts *Options) error {
 
 	ctx := context.Background()
 	var dataFile *os.File
-	if opts.version != "" {
-		request := dataAPI.ArtifactsApi.GetLatestArtifact(ctx, opts.group, opts.artifact)
+	// nolint
+	if opts.contentId != -1 {
+		request := dataAPI.ArtifactsApi.GetContentById(ctx, opts.contentId)
+		dataFile, _, err = request.Execute()
+	} else if opts.globalId != -1 {
+		request := dataAPI.ArtifactsApi.GetContentByGlobalId(ctx, opts.globalId)
+		dataFile, _, err = request.Execute()
+	} else if opts.hash != "" {
+		request := dataAPI.ArtifactsApi.GetContentByHash(ctx, opts.hash)
 		dataFile, _, err = request.Execute()
 	} else {
-		request := dataAPI.VersionsApi.GetArtifactVersion(ctx, opts.group, opts.artifact, opts.version)
-		dataFile, _, err = request.Execute()
+		return fmt.Errorf("Please specify at least one flag: [contentId, globalId, hash]")
 	}
+
 	if err != nil {
 		return registryinstanceerror.TransformError(err)
 	}
+
 	fileContent, err := ioutil.ReadFile(dataFile.Name())
 	if err != nil {
 		return err
