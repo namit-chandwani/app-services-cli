@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry/artifacts/crud/get"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry/artifacts/crud/list"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry/artifacts/crud/update"
+	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry/artifacts/metadata"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry/artifacts/versions"
 
 	"github.com/spf13/cobra"
@@ -43,6 +44,7 @@ func NewArtifactsCommand(f *factory.Factory) *cobra.Command {
 		update.NewUpdateCommand(f),
 
 		// Misc
+		metadata.NewMetadataCommand(f),
 		versions.NewVersionsCommand(f),
 	)
 

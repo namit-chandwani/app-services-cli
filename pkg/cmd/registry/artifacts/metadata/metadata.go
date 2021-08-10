@@ -1,4 +1,4 @@
-package versions
+package metadata
 
 import (
 	"context"
@@ -35,7 +35,7 @@ type Options struct {
 	localizer  localize.Localizer
 }
 
-func NewVersionsCommand(f *factory.Factory) *cobra.Command {
+func NewMetadataCommand(f *factory.Factory) *cobra.Command {
 	opts := &Options{
 		Config:     f.Config,
 		Connection: f.Connection,
@@ -45,15 +45,18 @@ func NewVersionsCommand(f *factory.Factory) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "versions",
-		Short: "Get latest artifact versions by id and group",
-		Long:  "Get latest artifact versions by specifying group and artifacts id",
+		Use:   "metadata",
+		Short: "Get artifact metadata",
+		Long: `
+Gets the metadata for an artifact in the service registry. 
+The returned metadata includes both generated (read-only) and editable metadata (such as name and description).
+`,
 		Example: `
-## Get latest artifact versions for default group
-rhoas service-registry artifacts versions my-artifact
+## Get latest artifact metadata for default group
+rhoas service-registry artifacts metadata my-artifact
 
-## Get latest artifact versions for my-group group
-rhoas service-registry artifacts versions my-artifact --group mygroup 
+## Get latest artifact metadata for my-group group
+rhoas service-registry artifacts metadata my-artifact --group mygroup 
 		`,
 		Args: cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -110,16 +113,16 @@ func runGet(opts *Options) error {
 		opts.group = util.DefaultArtifactGroup
 	}
 
-	logger.Info("Fetching artifact versions")
+	logger.Info("Fetching artifact metadata")
 
 	ctx := context.Background()
-	request := dataAPI.VersionsApi.ListArtifactVersions(ctx, opts.group, opts.artifact)
+	request := dataAPI.MetadataApi.GetArtifactMetaData(ctx, opts.group, opts.artifact)
 	response, _, err := request.Execute()
 	if err != nil {
 		return registryinstanceerror.TransformError(err)
 	}
 
-	logger.Info("Successfully fetched artifact versions")
+	logger.Info("Successfully fetched artifact metadata")
 
 	switch opts.outputFormat {
 	case "yaml", "yml":
