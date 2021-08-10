@@ -127,19 +127,19 @@ func runGet(opts *Options) error {
 	}
 
 	if opts.group == "" {
-		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + "artifacts group.")
+		logger.Info("Group was not specified. Using " + util.DefaultArtifactGroup + " artifacts group.")
 		opts.group = util.DefaultArtifactGroup
 	}
-
-	logger.Info("Fetching artifact")
 
 	ctx := context.Background()
 	var dataFile *os.File
 	if opts.version != "" {
-		request := dataAPI.ArtifactsApi.GetLatestArtifact(ctx, opts.group, opts.artifact)
+		logger.Info("Fetching artifact with version: " + opts.version)
+		request := dataAPI.VersionsApi.GetArtifactVersion(ctx, opts.group, opts.artifact, opts.version)
 		dataFile, _, err = request.Execute()
 	} else {
-		request := dataAPI.VersionsApi.GetArtifactVersion(ctx, opts.group, opts.artifact, opts.version)
+		logger.Info("Fetching latest artifact")
+		request := dataAPI.ArtifactsApi.GetLatestArtifact(ctx, opts.group, opts.artifact)
 		dataFile, _, err = request.Execute()
 	}
 	if err != nil {
